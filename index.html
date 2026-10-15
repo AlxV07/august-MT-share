@@ -1,9 +1,109 @@
-<html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>august-MT — field notes</title>
+  <style>
+    :root { --ink:#25231f; --paper:#f5f0e5; --blue:#345b73; --red:#994b3c; --rule:#c9bfae; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:#000; background:#fff; }
+    main { max-width:980px; margin:0 auto; padding:42px 24px 80px; }
+    h1,h2,h3 { font-weight:normal; line-height:1.15; }
+    h1 { font-size:clamp(2rem,4vw,3rem); margin:0 0 4px; letter-spacing:-.03em; }
+    h2 { margin-top:2.7rem; padding-top:1rem; border-top:1px solid var(--rule); font-size:1.7rem; }
+    h3 { color:var(--blue); margin-bottom:.3rem; }
+    .dek { font-size:1.25rem; max-width:720px; color:#5d554b; }
+    .scribble { color:var(--red); transform:rotate(-1deg); display:inline-block; font-style:italic; }
+    .note { border-left:4px solid var(--red); padding:.25rem 1rem; margin:1.5rem 0; background:#eee6d8; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+    .card { border:1px solid var(--rule); padding:15px; background:rgba(255,255,255,.2); }
+    .card p { margin:.35rem 0; }
+    code { font-family:Consolas,monospace; font-size:.9em; color:#55412e; }
+    a { color:var(--blue); }
+    table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.95rem; }
+    th,td { text-align:left; border-bottom:1px solid var(--rule); padding:8px 6px; vertical-align:top; }
+    th { color:var(--blue); }
+    .small { color:#6d665c; font-size:.9rem; }
+    .timeline { padding-left:1.3rem; border-left:2px dashed var(--rule); }
+    .timeline section { margin:1.2rem 0 1.8rem; }
+    ul { padding-left:1.3rem; }
+  </style>
+</head>
 <body>
-		# august-MT-share
+<main>
+  <header>
+    <h1>august-MT</h1>
+    <p class="scribble">WIP project: field notes temporary progress report :D 
+	<br>
+	<br>
+	(unrelated to project progress, a note on the rather jumbled state of this report to myself and any readers) apologies for potentially using sentence or paragraph fragments pasted in from my raw notes; I haven't yet smoothened out the text<br><br>
+	I could have AI-compiled all this from the project repositories, but decided this is more authentic (GPT was used to generate the style templates tho)</p>
+    <p class="small"></p>
 
-		Field notes on august-MT experiments.
+    <p class="small">Last updated: Oct 15 2026 -m "made a little cleaner"</p>
+  </header>
 
-		{}
+  <div class="note"><strong>Purpose Summary:</strong> august-MT started by trying to improve Latin translation performance of LLMs by using a surgical word-by-word analysis approach, guided by explicit prompt conditions and symbolic verification feedback fed through controlled context injections rather than massive system prompts or simple looping. While the "bitter lesson" applies for problems where data abundance allows for scaling past human-defined constructs, Latin is a low/medium-resource language, so simply throwing more data at larger models isn't feasible. First-attempt experiments saw model's grammatical analyses were often unreliable at exposing Latin morphology. I hypothesized the issue was at a lower level: instead of just asking models to understand Latin, I began exploring whether their tokenizers could even represent Latin morphological information cleanly in the first place.</div>
+
+  <p><em>august-MT</em> is a personal research project I started from my interest in computer science and AI combined with the Latin language. The exact reason why I first created the repo as "august" has been lost (it was not created in August), though perhaps it was connected to Augustus. Latin has relatively little parallel training data while boasting a complex, highly inflected morphological system with flexible word order and several historical varieties. A translation can sound fluent but nuances like case, voice, tense, negation, or argument relationship may be incorrect. Research is ongoing; this report is a snapshot of my motivations, progress, and continued work.</p>
+
+  <h2>Rough timeline of completed work (reconstructed)</h2>
+  <p class="small">Dates here come from working notes; some later experiment folders have august-style names even though tokenizer-august work (branching off of original august-MT nesy project) started early September</p>
+  <div class="timeline">
+		  <section><h3>March-April 2026 - literature review, translation scaffold prototyping and playgrounds</h3><p>working in <code>august-mt</code> repo. Background notes about some papers (LITERA, Minerva), metrics (BLEU, BLEURT), and other existing resources e.g. Google Translatle Latin-English corpora. Some prototyping with prompts and playing with frontier LLMs vs. smaller local-hosted LLMs to subjectively gauge performance, Latin analysis sophistication and perf.</p>
+
+				  <p>Smaller LLMs handled simple tasks (e.g. identify case, function of word 'x' in sentence 'y') well but struggled when prompts requested multiple identifications with complicated requirements about Latin grammar rules. From here, I formed the initial idea for a surgical neurosymbolic loop: LLMs individually produced a raw translation parts and word-level analysis, which would be assembled and then verified by symbolic rules and coordinator. Also potentially taking inspiration for LITERA for self-correction loops, though personal compute-limitations would pose practical experiment limitations.</p></section>
+    <section><h3>May-July 2026 - bit less work w/ other life and project events happening; did some experiments with local models and thought of possible training routes</h3><p>I ran smaller models locally with MLX on an M2 Max, some short misc trial runs with QLoRA, DPO, and GRPO to see how far I could push it. Main questions was how to work with limited Latin training data and limited hardware while still encouraging the model to reason about morphology; strong signals would be preferable, so began looking deeper into where to assign rewards</p></section>
+    <section><h3>August - October 2026 - tokenizer subproject branching off, becomes center focus</h3><p>Hit above-mentioned tokenizer realization; later found the morphology-guided Latin tokenizer BERT-training paper which confirmed essentially all of my instincts about what was going on. I wanted to try and replicate improvements on LLMs though, so gathered materials at hand; translation benchmark using the Grosenthal test split (1,014 examples) from HF, and the smaller LITERA Classical datasets. Will be measuring both tokenizer yield metrics as well as base translation quality; chrF+, BLEU and BLEURT. Tokenization measurements remain diagnostics, not a substitute for translation quality.</p>
+
+  One of jotted down questions from notes: <p><strong>do common LLM tokenizers split Latin words at linguistically useful boundaries, such as stems and inflected endings?</strong></p>
+			<p></p></section>
+  </div>
+
+  <h2>Initial tokenizer analysis</h2>
+  <p>The comparison includes Qwen3.5 and Gemma 4 base tokenizers against ordinary Unigram and WordPiece tokenizers and variants trained with LemLat-derived morphology boundaries from the morph paper. The morphology-aware variants either seed suffixes or pre-segment the training corpus. Contextual variants use POS information to choose between competing analyses. Future experiments could try more model fleet tokenizers to determine better starting points for training (see next steps)</p>
+
+  <h3>First result: general-purpose tokenizers are poorly aligned</h3>
+  <p>Across 102,840 morphology examples, the general-purpose tokenizers have low exact-match segmentation and boundary F1. Note: this is an alignment result, not claiming that the models cannot understand Latin or translate it.</p>
+  <table><thead><tr><th>Tokenizer</th><th>Fertility</th><th>Exact match</th><th>Boundary F1</th></tr></thead><tbody>
+    <tr><td>Gemma 4</td><td>3.23</td><td>4.0%</td><td>19.5%</td></tr>
+    <tr><td>Qwen3.5</td><td>3.38</td><td>3.5%</td><td>20.6%</td></tr>
+    <tr><td>ULM MorphPreTok contextual</td><td>3.11</td><td>17.0%</td><td>44.1%</td></tr>
+    <tr><td>WP MorphPreTok contextual</td><td>2.48</td><td>17.0%</td><td>32.2%</td></tr>
+  </tbody></table>
+  <p class="small">Fertility means tokenizer pieces per whitespace word. Exact match asks whether the complete segmentation matches the morphology reference. Boundary F1 measures partial agreement.</p>
+
+  <h3>Second result: sometimes desired boundary is impossible</h3>
+  <p>A follow-up test asked whether the gold morpheme boundaries were at least available between the emitted tokens. For Qwen3.5, only 24.4% of words were fully realizable; for Gemma 4, 22.1% were. The exact-match rates were only 3.5% and 4.0%.</p>
+  <p>This separates “the tokenizer chose a different valid path” from “the tokenizer merged across a boundary that cannot be recovered by regrouping.” Model fine-tuning alone cannot create a missing token boundary; thus supporting my instinct that the vocabulary or tokenizer rules would need to change too.</p>
+
+  <h3>Third result: Latin prose and morphology fixtures behave differently</h3>
+  <p>On the Grosenthal test set, Qwen3.5 averages about 2.07 pieces per whitespace word and Gemma 4 about 1.96. On the deliberately inflection-heavy Sigmorphon set, those numbers rise to 3.46 and 3.30. Tokenization results are therefore corpus-dependent: a tokenizer can look compact on prose while fragmenting difficult word forms.</p>
+
+  <h2>Active plan</h2>
+  <ul>
+		  <li>Tokenization is a plausible upstream source of difficulty: the model may not receive stable stem/ending units in the first place.</li>
+		  <li>Pre-segmenting around morphology boundaries matters much more than merely adding a list of suffixes to a vocabulary. For training, another idea is to train base models on a Latin corpora, then train same base model with updated Latin-specific tokenizer, perhaps do some "pretraining" to get familiar, then train on same - could be an interesting comparison to see how well models adapt when given unfamiliar vocab and/or tokens. Another note: perhaps we could use existing similar tokens to safe training from scratch? Would need a lot more investigation down this route thoug</li>
+		  <li>Tokenizer alignment and translation quality are different questions; test whether better Latin-aware units actually improve Latin -\> English translation.</li>
+  </ul>
+
+  <h2>GPT suggested adding links to "useful samples and working files" when verifying what I had dropped into the report; unfortunately these links won't point anywhere as I'm not committing them yet to the pub repo, but I'll leave them here for reference in the future</h2>
+  <div class="grid">
+    <div class="card"><h3>Project origin</h3><p><a href="docs-drop-august.txt">Original august-MT notes</a></p><p class="small">Background, architecture sketches, prompts, translation slate, and early examples.</p></div>
+    <div class="card"><h3>Working chronology</h3><p><a href="docs-drop-tokenize.txt">Tokenizer and progress notes</a></p><p class="small">March start, local-model ideas, benchmark planning, and the morphology pivot.</p></div>
+    <div class="card"><h3>Benchmark</h3><p><a href="benchmark/overview.md">Benchmark overview</a> · <a href="benchmark/README.md">README</a></p><p class="small">Resumable runs, datasets, metrics, and the separation between translation and tokenizer diagnostics.</p></div>
+    <div class="card"><h3>Translation plan</h3><p><a href="task1_measurement_harness_plan.md">Measurement harness plan</a></p><p class="small">chrF++, BLEU, BLEURT, and proposed tokenization measurements.</p></div>
+    <div class="card"><h3>Comparison experiment</h3><p><a href="experiments/08_24_llm-raw-tokenizer-vs-contextual-tokenizer/findings.md">Tokenizer comparison findings</a></p><p class="small">Qwen3.5, Gemma 4, ULM, WordPiece, and morphology-guided variants.</p></div>
+    <div class="card"><h3>Boundary feasibility</h3><p><a href="experiments/08_25_llm-segment-boundary-feasibility/findings.md">Can the boundaries be expressed?</a></p><p class="small">The vocabulary/segmentation constraint follow-up.</p></div>
+    <div class="card"><h3>Corpus behavior</h3><p><a href="experiments/08_25_token-distribution-analysis/findings.md">Token distribution findings</a></p><p class="small">How fertility changes across Sigmorphon, LemLat/UD, and Grosenthal.</p></div>
+    <div class="card"><h3>Paper notes</h3><p><a href="papers/morph-guided-tokenizers/latin_morpheme_report.md">Latin morphology-guided tokenizer report</a></p><p class="small">Training pipeline, tokenizer variants, and reported downstream results.</p></div>
+    <div class="card"><h3>Hands-on playground</h3><p><a href="playground/tokenize_qwen3.py">Qwen tokenizer script</a> · <a href="playground/manual_token_edit.py">Manual token editing</a></p><p class="small">Small experiments for inspecting and manipulating tokenization.</p></div>
+    <div class="card"><h3>Open questions</h3><p><a href="TODO.md">TODO</a> · <a href="benchmark/QUICK_BENCH.md">Quick benchmark</a></p><p class="small">What to measure next, and how to run a small reproducible evaluation.</p></div>
+  </div>
+
+  <h2>Next experiment</h2>
+  <p>Keep the translation benchmark fixed, compare a base tokenizer with a Latin-aware tokenizer, and measure translation quality separately from morphology alignment. Working out compute limits rn  <footer class="small"><p>This page is a deliberately informal field report. Numbers and claims link back to the working notes and checked-in experiment outputs; the chronology is reconstructed from notes collected at different times.</p></footer>
+</main>
 </body>
 </html>
