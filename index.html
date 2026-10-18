@@ -28,6 +28,18 @@
     .timeline { padding-left:1.3rem; border-left:2px dashed var(--rule); }
     .timeline section { margin:1.2rem 0 1.8rem; }
     ul { padding-left:1.3rem; }
+    .diagram-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin:1.4rem 0 1.8rem; }
+    .diagram { border:1px solid var(--rule); padding:16px; background:#fbf8f0; }
+    .diagram h4 { margin:.1rem 0 .8rem; color:var(--blue); font-size:1.05rem; font-weight:normal; }
+    .flow { display:flex; align-items:stretch; gap:7px; flex-wrap:wrap; }
+    .flow-box { flex:1 1 95px; min-height:58px; display:flex; align-items:center; justify-content:center; text-align:center; padding:9px 7px; border:1px solid var(--blue); background:#e9f0f1; color:#243d4c; font-size:.9rem; }
+    .flow-arrow { align-self:center; color:var(--red); font-size:1.25rem; }
+    .token-line { display:flex; flex-wrap:wrap; gap:5px; margin:.7rem 0; }
+    .token { padding:5px 7px; border:1px solid var(--rule); background:#fff; font-family:Consolas,monospace; font-size:.85rem; }
+    .token.morph { border-color:var(--red); background:#f6e4dc; }
+    .token-note { color:#6d665c; font-size:.85rem; }
+    .token.correct { border-color:#50724f; background:#e7f0e3; }
+    .diagram .caption { margin:.8rem 0 0; color:#6d665c; font-size:.86rem; }
   </style>
 </head>
 <body>
@@ -38,7 +50,7 @@
 	<br>
 	<br>
 	(unrelated to project progress, a note on the rather jumbled state of this report to myself and any readers) apologies for potentially using sentence or paragraph fragments pasted in from my raw notes; I haven't yet smoothened out the text<br><br>
-	I could have AI-compiled all this from the project repositories, but decided this is more authentic (GPT was used to generate the style templates tho)</p>
+	I could have used AI to compile all this from the project repositories, but decided that this is more authentic (GPT was used to generate the basic CSS style templates tho)</p>
     <p class="small"></p>
 
     <p class="small">Last updated: Oct 15 2026 -m "made a little cleaner"</p>
@@ -55,7 +67,7 @@
 
 				  <p>Smaller LLMs handled simple tasks (e.g. identify case, function of word 'x' in sentence 'y') well but struggled when prompts requested multiple identifications with complicated requirements about Latin grammar rules. From here, I formed the initial idea for a surgical neurosymbolic loop: LLMs individually produced a raw translation parts and word-level analysis, which would be assembled and then verified by symbolic rules and coordinator. Also potentially taking inspiration for LITERA for self-correction loops, though personal compute-limitations would pose practical experiment limitations.</p></section>
     <section><h3>May-July 2026 - bit less work w/ other life and project events happening; did some experiments with local models and thought of possible training routes</h3><p>I ran smaller models locally with MLX on an M2 Max, some short misc trial runs with QLoRA, DPO, and GRPO to see how far I could push it. Main questions was how to work with limited Latin training data and limited hardware while still encouraging the model to reason about morphology; strong signals would be preferable, so began looking deeper into where to assign rewards</p></section>
-    <section><h3>August - October 2026 - tokenizer subproject branching off, becomes center focus</h3><p>Hit above-mentioned tokenizer realization; later found the morphology-guided Latin tokenizer BERT-training paper which confirmed essentially all of my instincts about what was going on. I wanted to try and replicate improvements on LLMs though, so gathered materials at hand; translation benchmark using the Grosenthal test split (1,014 examples) from HF, and the smaller LITERA Classical datasets. Will be measuring both tokenizer yield metrics as well as base translation quality; chrF+, BLEU and BLEURT. Tokenization measurements remain diagnostics, not a substitute for translation quality.</p>
+    <section><h3>August - October 2026 - tokenizer subproject branching off, becomes center focus</h3><p>Hit above-mentioned tokenizer realization; later found the morphology-guided Latin tokenizer BERT-training paper which confirmed essentially all of my instincts about what was going on. I wanted to try and replicate improvements on LLMs though, so gathered materials at hand; translation benchmark using the Grosenthal test split (1,014 examples) from HF, and the smaller LITERA Classical datasets. Will be measuring both tokenizer yield metrics as well as base translation quality; chrF+, BLEU and BLEURT. Tokenization measurements remain diagnostics, not a substitute for translation quality. Delayed by Mac screen breaking, then ofc the motherboard required a full system reset ._. Currently waiting for repairs before experiments can continue</p>
 
   One of jotted down questions from notes: <p><strong>do common LLM tokenizers split Latin words at linguistically useful boundaries, such as stems and inflected endings?</strong></p>
 			<p></p></section>
@@ -63,6 +75,35 @@
 
   <h2>Initial tokenizer analysis</h2>
   <p>The comparison includes Qwen3.5 and Gemma 4 base tokenizers against ordinary Unigram and WordPiece tokenizers and variants trained with LemLat-derived morphology boundaries from the morph paper. The morphology-aware variants either seed suffixes or pre-segment the training corpus. Contextual variants use POS information to choose between competing analyses. Future experiments could try more model fleet tokenizers to determine better starting points for training (see next steps)</p>
+
+  <div class="diagram-grid" aria-label="Two diagrams explaining tokenization and a saved Qwen example">
+    <section class="diagram">
+      <h4>Tokenization, in one glance</h4>
+      <div class="flow">
+        <div class="flow-box">Raw text<br><code>Latin sentence</code></div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-box">Tokenizer<br><span class="small">vocabulary + rules</span></div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-box">Token IDs<br><code>[id₁, id₂, ...]</code></div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-box">Model<br><span class="small">predicts what comes next</span></div>
+      </div>
+      <p class="caption">The model never receives the word as one indivisible object: it receives the tokenizer’s pieces, which are then mapped to embeddings.</p>
+    </section>
+
+    <section class="diagram">
+      <h4>A saved August run: Qwen3.5</h4>
+      <p class="small"><em>currens autem vir de Beniamin...</em></p>
+      <div class="token-line" aria-label="Qwen3.5 token sequence from the saved JSONL output">
+        <span class="token morph">c</span><span class="token morph">urre</span><span class="token morph">ns</span>
+        <span class="token">␠aut</span><span class="token">em</span>
+        <span class="token">␠vir</span><span class="token">␠de</span>
+        <span class="token morph">␠Ben</span><span class="token morph">iam</span><span class="token">in</span>
+      </div>
+      <p class="token-note">␠ marks a whitespace-prefixed piece; red marks the pieces inside the first few words.</p>
+      <p class="caption">Run <code>01a0369e-d266-75a0-942f-b3025b0c7bc5</code>, <code>qwen3.5-comparison/qwen3-mlx.sentences.jsonl</code>, line 2 (record <code>id=90310</code>). This is not a morphology-aware segmentation: <code>currens</code> becomes <code>c | urre | ns</code>, while <code>Beniamin</code> becomes <code>Ben | iam | in</code>. The full saved sentence had 32 tokens for 19 whitespace words.</p>
+    </section>
+  </div>
 
   <h3>First result: general-purpose tokenizers are poorly aligned</h3>
   <p>Across 102,840 morphology examples, the general-purpose tokenizers have low exact-match segmentation and boundary F1. Note: this is an alignment result, not claiming that the models cannot understand Latin or translate it.</p>
@@ -76,6 +117,15 @@
 
   <h3>Second result: sometimes desired boundary is impossible</h3>
   <p>A follow-up test asked whether the gold morpheme boundaries were at least available between the emitted tokens. For Qwen3.5, only 24.4% of words were fully realizable; for Gemma 4, 22.1% were. The exact-match rates were only 3.5% and 4.0%.</p>
+  <div class="diagram" aria-label="Correct morphology boundary compared with Qwen3.5 output">
+    <h4>What the boundary should look like</h4>
+    <p class="small">For this illustrative word, the morphology-aware reference keeps the stem and participial ending together as separate units:</p>
+    <p class="small"><strong>Reference / useful boundary</strong></p>
+    <div class="token-line"><span class="token correct">curr</span><span class="token correct">ens</span></div>
+    <p class="small"><strong>Qwen3.5 line 2 output</strong></p>
+    <div class="token-line"><span class="token morph">c</span><span class="token morph">urre</span><span class="token morph">ns</span></div>
+    <p class="caption">The desired <code>curr | ens</code> boundary is not available in the emitted sequence <code>c | urre | ns</code>; regrouping the Qwen pieces cannot reconstruct it without changing the tokenizer vocabulary or rules.</p>
+  </div>
   <p>This separates “the tokenizer chose a different valid path” from “the tokenizer merged across a boundary that cannot be recovered by regrouping.” Model fine-tuning alone cannot create a missing token boundary; thus supporting my instinct that the vocabulary or tokenizer rules would need to change too.</p>
 
   <h3>Third result: Latin prose and morphology fixtures behave differently</h3>
